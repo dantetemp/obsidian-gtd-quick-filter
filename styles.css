@@ -1,0 +1,116 @@
+.gtd-quick-filter { padding: 8px; overflow: visible; }
+
+.qf-head { display: flex; gap: 6px; margin-bottom: 8px; }
+.qf-icon {
+  font-size: 12px; padding: 3px 10px; border-radius: 6px; cursor: pointer;
+  background: var(--background-modifier-border); border: none;
+}
+
+.qf-search {
+  width: 100%; box-sizing: border-box; margin-bottom: 8px; padding: 5px 8px;
+  border-radius: 6px; background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border); color: var(--text-normal);
+}
+
+.qf-tabs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
+.qf-tab {
+  font-size: 12px; padding: 4px 8px; border-radius: 6px; text-transform: uppercase;
+  background: var(--background-secondary); border: none; cursor: pointer;
+}
+.qf-tab.is-active { background: var(--interactive-accent); color: var(--text-on-accent); }
+.qf-tab-all { font-weight: 700; }
+
+.qf-clear-tabs {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.03em; padding: 4px 10px;
+  border-radius: 6px; cursor: pointer; border: none;
+  background: var(--background-secondary); color: #000 !important;
+}
+.qf-clear-tabs.is-active { background: #d64545 !important; color: #fff !important; }
+
+/* rows */
+.qf-selects { display: flex; gap: 6px; margin-bottom: 6px; }
+.qf-filters { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
+.qf-datewrap { display: inline-flex; align-items: center; gap: 4px; flex-wrap: nowrap; }
+.qf-dlabel { font-size: 11px; color: var(--text-muted); }
+.qf-dinput {
+  flex: 0 0 auto; width: 120px; font-size: 11px; padding: 2px 4px; border-radius: 5px;
+  background: var(--background-secondary); border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+}
+
+/* custom dropdown — opens strictly below the field */
+.qf-cs { position: relative; display: inline-block; }
+.qf-selects .qf-cs { flex: 1; }
+.qf-cs-btn {
+  width: 100%; font-size: 12px; font-weight: 600; letter-spacing: 0.02em;
+  padding: 5px 10px; border-radius: 6px; text-align: left; white-space: nowrap; cursor: pointer;
+  background: var(--background-secondary); border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+}
+.qf-cs-menu {
+  display: none; position: absolute; top: 100%; left: 0; margin-top: 3px; z-index: 50;
+  min-width: 100%; max-height: 280px; overflow-y: auto; padding: 4px;
+  background: var(--background-primary); border: 1px solid var(--background-modifier-border);
+  border-radius: 6px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+.qf-cs.is-open .qf-cs-menu { display: block; }
+.qf-cs-item { padding: 5px 10px; border-radius: 4px; white-space: nowrap; cursor: pointer; font-size: 12px; color: var(--text-normal); }
+.qf-cs-item:hover { background: var(--background-modifier-hover); }
+.qf-cs-item.is-sel { background: var(--interactive-accent); color: var(--text-on-accent); }
+
+.qf-mode {
+  font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 6px;
+  background: var(--background-modifier-border); border: none; cursor: pointer;
+}
+
+/* tag groups — rectangular rounded like status buttons; frame hugs chip height */
+.qf-taggroups { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; align-items: flex-start; }
+.qf-group {
+  display: inline-flex; flex-wrap: wrap; align-items: center; gap: 3px;
+  background: var(--background-secondary); border: 1px solid var(--background-modifier-border);
+  border-radius: 6px; padding: 0; width: fit-content; max-width: 100%; overflow: hidden;
+}
+.qf-chip {
+  font-size: 12px; padding: 4px 8px; border-radius: 5px; cursor: pointer;
+  background: transparent; border: none; color: var(--text-normal);
+}
+.qf-chip.is-on { background: var(--interactive-accent); color: var(--text-on-accent); }
+.qf-parent { font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; }
+.qf-child { font-size: 11px; opacity: 0.92; }
+.qf-notset { font-style: italic; opacity: 0.75; }
+
+.qf-count { font-size: 11px; color: var(--text-muted); margin: 4px 0; }
+
+/* list view */
+.qf-row { display: flex; align-items: flex-start; gap: 8px; padding: 7px 4px; border-bottom: 1px solid var(--background-modifier-border); cursor: pointer; }
+.qf-row:hover { background: var(--background-modifier-hover); }
+.qf-drop-before { box-shadow: inset 0 2px 0 0 var(--interactive-accent); }
+.qf-drop-after { box-shadow: inset 0 -2px 0 0 var(--interactive-accent); }
+.qf-drop-child { background: var(--background-modifier-hover); outline: 1px dashed var(--interactive-accent); outline-offset: -2px; }
+.qf-check { margin-top: 3px; }
+.qf-mark { margin-top: 1px; width: 16px; text-align: center; cursor: pointer; font-weight: 700; }
+.qf-canceled { color: var(--text-error, #e5534b); }
+.qf-table .qf-mark { margin-top: 0; }
+.qf-title { font-size: 14px; }
+.qf-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; align-items: center; }
+.qf-meta span { font-size: 11px; }
+.qf-due { color: var(--text-accent); }
+.qf-start { color: var(--text-muted); }
+.qf-proj { color: var(--text-accent); }
+.qf-area { font-style: italic; color: var(--text-muted); }
+.qf-flag { color: var(--text-muted); }
+.qf-empty { color: var(--text-muted); font-size: 13px; padding: 16px 4px; }
+
+/* short colored tag labels in rows */
+.qf-ctx { padding: 0 6px; border-radius: 4px; background: var(--background-secondary); color: var(--text-muted); }
+.qf-tg-context  { background: rgba(94, 129, 244, 0.18); color: #8aa0ff; }
+.qf-tg-location { background: rgba(64, 184, 122, 0.18); color: #5ec88a; }
+.qf-tg-energy   { background: rgba(232, 168, 56, 0.18); color: #e0a83a; }
+
+/* table view */
+.qf-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.qf-table th { text-align: left; color: var(--text-muted); font-weight: 600; padding: 4px 6px; border-bottom: 1px solid var(--background-modifier-border); }
+.qf-table td { padding: 4px 6px; border-bottom: 1px solid var(--background-modifier-border); }
+.qf-trow:hover { background: var(--background-modifier-hover); }
+.qf-tcell-title { cursor: pointer; }
+.qf-tcell-title:hover { color: var(--text-accent); }

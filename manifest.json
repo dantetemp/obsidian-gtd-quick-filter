@@ -1,0 +1,9 @@
+{
+  "id": "quick-filter",
+  "name": "GTD Quick Filter",
+  "version": "0.037",
+  "minAppVersion": "1.5.0",
+  "description": "Things-style instant tag/context filtering over GTD task notes. Tap chips to filter a flat task list from the in-memory metadata cache.",
+  "author": "Alexey",
+  "isDesktopOnly": false
+}
