@@ -138,6 +138,7 @@ function localStamp() { // local "YYYY-MM-DDTHH:MM" for the close timestamp
 }
 
 // robust to path-qualified / aliased / heading links: [[folder/name|alias#h]] -> "name"
+const fmtDate = (v) => (v ? String(v).replace("T", " ") : v); // display "yyyy-mm-dd hh:mm"
 const stripLink = (v) => {
   if (v == null) return null;
   let s = String(v).replace(/\[\[|\]\]/g, "").trim();
@@ -270,11 +271,21 @@ class FilterPanel {
   matchesTags(t) {
     if (this.tagsSel === "no") return t.tags.length === 0;
     if (this.tagsSel === "has" && t.tags.length === 0) return false;
-    const conds = [];
-    for (const s of this.selected) conds.push(this.taskHasSel(t, s));
-    for (const g of this.tagNotSet) conds.push(!this.taskInGroup(t, g)); // "not set": no tag in group
-    if (conds.length === 0) return true;
-    return this.mode === "AND" ? conds.every(Boolean) : conds.some(Boolean);
+    // faceted: group selections by top-level group → OR within a group; AND/OR across groups.
+    // lets you combine e.g. (location: home OR not-set) with (context: phone).
+    const groups = new Map();
+    for (const s of this.selected) {
+      const g = top(s);
+      if (!groups.has(g)) groups.set(g, []);
+      groups.get(g).push((x) => this.taskHasSel(x, s));
+    }
+    for (const g of this.tagNotSet) {
+      if (!groups.has(g)) groups.set(g, []);
+      groups.get(g).push((x) => !this.taskInGroup(x, g));
+    }
+    if (groups.size === 0) return true;
+    const perGroup = [...groups.values()].map((conds) => conds.some((fn) => fn(t)));
+    return this.mode === "AND" ? perGroup.every(Boolean) : perGroup.some(Boolean);
   }
   matchesSearch(t) {
     if (!this.search) return true;
@@ -577,15 +588,15 @@ class FilterPanel {
     const main = row.createDiv({ cls: "qf-main" });
     main.createDiv({ cls: "qf-title", text: (depth ? "↳ " : "") + task.title });
     const meta = main.createDiv({ cls: "qf-meta" });
-    if (task.start) meta.createSpan({ cls: "qf-start", text: "▶ " + task.start });
-    if (task.due) meta.createSpan({ cls: "qf-due", text: task.due });
+    if (task.start) meta.createSpan({ cls: "qf-start", text: "▶ " + fmtDate(task.start) });
+    if (task.due) meta.createSpan({ cls: "qf-due", text: fmtDate(task.due) });
     for (const p of task.projects) meta.createSpan({ cls: "qf-proj", text: p });
     for (const a of task.areas) meta.createSpan({ cls: "qf-area", text: a });
     for (const tg of task.tags) this.tagSpan(meta, tg);
     if (task.research.length) meta.createSpan({ cls: "qf-flag", text: `🔎${task.research.length}`, attr: { title: `${task.research.length} linked research note(s)` } });
     if (task.hasNotes) meta.createSpan({ cls: "qf-flag", text: "✎", attr: { title: "has notes in the body" } });
     if (task.hasSubtasks) meta.createSpan({ cls: "qf-flag", text: "⊞", attr: { title: "has subtasks" } });
-    if (task.close) meta.createSpan({ cls: "qf-flag", text: "✔ " + task.close, attr: { title: "closed at" } });
+    if (task.close) meta.createSpan({ cls: "qf-flag", text: "✔ " + fmtDate(task.close), attr: { title: "closed at" } });
     row.onclick = (e) => this.openOrCreate(task, e);
     // drag & drop: reorder · drop ON a row → make it a sub-task · drop in the gap → sibling
     row.draggable = true;
@@ -606,7 +617,7 @@ class FilterPanel {
       titleCell.onclick = (e) => this.openOrCreate(task, e);
       tr.createEl("td", { text: task.status });
       tr.createEl("td", { text: String(task.priority) });
-      tr.createEl("td", { text: task.due || "" });
+      tr.createEl("td", { text: fmtDate(task.due) || "" });
       tr.createEl("td", { text: task.projects.join(", ") });
     }
   }
