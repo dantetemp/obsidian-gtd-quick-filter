@@ -132,6 +132,10 @@ function dateRangeMs(ms, key, custom) {
   return b ? ms >= b.lo && ms < b.hi : true;
 }
 const matchDateRange = (rawValue, key, custom) => dateRangeMs(parseDateMs(rawValue), key, custom);
+function localStamp() { // local "YYYY-MM-DDTHH:MM" for the close timestamp
+  const d = new Date(), p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
 
 // robust to path-qualified / aliased / heading links: [[folder/name|alias#h]] -> "name"
 const stripLink = (v) => {
@@ -175,6 +179,7 @@ class FilterPanel {
     this.startRange = "any"; this.startFrom = ""; this.startTo = "";
     this.createdRange = "any"; this.createdFrom = ""; this.createdTo = "";
     this.modifiedRange = "any"; this.modifiedFrom = ""; this.modifiedTo = "";
+    this.closeRange = "any"; this.closeFrom = ""; this.closeTo = "";
     this.parentSel = "any";
     this.subtasksSel = "any";
     this.researchSel = "any";
@@ -208,6 +213,7 @@ class FilterPanel {
         start: fm.start || null,
         created: file.stat ? file.stat.ctime : null,
         modified: file.stat ? file.stat.mtime : null,
+        close: fm.close || null,
         tags: normTags(fm),
         projects: normList(fm.project),
         areas: normList(fm.area),
@@ -255,6 +261,7 @@ class FilterPanel {
   matchesStart(t) { return matchDateRange(t.start, this.startRange, { from: this.startFrom, to: this.startTo }); }
   matchesCreated(t) { return dateRangeMs(t.created, this.createdRange, { from: this.createdFrom, to: this.createdTo }); }
   matchesModified(t) { return dateRangeMs(t.modified, this.modifiedRange, { from: this.modifiedFrom, to: this.modifiedTo }); }
+  matchesClose(t) { return matchDateRange(t.close, this.closeRange, { from: this.closeFrom, to: this.closeTo }); }
   matchesParent(t) { return this.parentSel === "any" ? true : this.parentSel === "set" ? !!t.parent : !t.parent; }
   matchesSubtasks(t) { return this.subtasksSel === "any" ? true : this.subtasksSel === "available" ? t.hasSubtasks : !t.hasSubtasks; }
   matchesResearch(t) { return this.researchSel === "any" ? true : this.researchSel === "has" ? t.research.length > 0 : t.research.length === 0; }
@@ -276,7 +283,7 @@ class FilterPanel {
   }
   matchesAll(t) {
     return this.matchesStatus(t) && this.matchesArea(t) && this.matchesProject(t)
-      && this.matchesDue(t) && this.matchesStart(t) && this.matchesCreated(t) && this.matchesModified(t)
+      && this.matchesDue(t) && this.matchesStart(t) && this.matchesCreated(t) && this.matchesModified(t) && this.matchesClose(t)
       && this.matchesParent(t) && this.matchesSubtasks(t) && this.matchesResearch(t) && this.matchesNotes(t)
       && this.matchesTags(t) && this.matchesSearch(t);
   }
@@ -291,7 +298,7 @@ class FilterPanel {
     return this.search || this.selected.size || this.tagNotSet.size || this.tagsSel !== "any"
       || this.statusMode !== "active"
       || this.area !== this.areaBaseline() || this.project !== this.projBaseline()
-      || this.dueRange !== "any" || this.startRange !== "any" || this.createdRange !== "any" || this.modifiedRange !== "any"
+      || this.dueRange !== "any" || this.startRange !== "any" || this.createdRange !== "any" || this.modifiedRange !== "any" || this.closeRange !== "any"
       || this.parentSel !== "any" || this.subtasksSel !== "any" || this.researchSel !== "any" || this.notesSel !== "any";
   }
 
@@ -306,6 +313,7 @@ class FilterPanel {
     this.startRange = "any"; this.startFrom = ""; this.startTo = "";
     this.createdRange = "any"; this.createdFrom = ""; this.createdTo = "";
     this.modifiedRange = "any"; this.modifiedFrom = ""; this.modifiedTo = "";
+    this.closeRange = "any"; this.closeFrom = ""; this.closeTo = "";
     this.parentSel = "any"; this.subtasksSel = "any"; this.researchSel = "any"; this.notesSel = "any";
     this.render();
   }
@@ -473,6 +481,7 @@ class FilterPanel {
     dateFilter(filterRow, "DUE", DATE_RANGES, this.dueRange, this.dueFrom, this.dueTo, (v) => this.dueRange = v, (v) => this.dueFrom = v, (v) => this.dueTo = v);
     dateFilter(filterRow, "CREATED", DATE_RANGES_PAST, this.createdRange, this.createdFrom, this.createdTo, (v) => this.createdRange = v, (v) => this.createdFrom = v, (v) => this.createdTo = v);
     dateFilter(filterRow, "MODIFIED", DATE_RANGES_PAST, this.modifiedRange, this.modifiedFrom, this.modifiedTo, (v) => this.modifiedRange = v, (v) => this.modifiedFrom = v, (v) => this.modifiedTo = v);
+    dateFilter(filterRow, "CLOSE", DATE_RANGES_PAST, this.closeRange, this.closeFrom, this.closeTo, (v) => this.closeRange = v, (v) => this.closeFrom = v, (v) => this.closeTo = v);
 
     // presence selects: PARENT TASK / SUBTASKS / RESEARCH / NOTES / TAGS
     // closed-when-"any" shows just the field name; the dropdown list shows "<FIELD> IS ANY"
@@ -557,6 +566,7 @@ class FilterPanel {
     if (task.research.length) meta.createSpan({ cls: "qf-flag", text: `🔎${task.research.length}`, attr: { title: `${task.research.length} linked research note(s)` } });
     if (task.hasNotes) meta.createSpan({ cls: "qf-flag", text: "✎", attr: { title: "has notes in the body" } });
     if (task.hasSubtasks) meta.createSpan({ cls: "qf-flag", text: "⊞", attr: { title: "has subtasks" } });
+    if (task.close) meta.createSpan({ cls: "qf-flag", text: "✔ " + task.close, attr: { title: "closed at" } });
     row.onclick = (e) => this.openOrCreate(task, e);
     // drag & drop: reorder · drop ON a row → make it a sub-task · drop in the gap → sibling
     row.draggable = true;
@@ -598,7 +608,10 @@ class FilterPanel {
   }
 
   async setStatus(task, status) {
-    await this.app.fileManager.processFrontMatter(task.file, (fm) => { fm.status = status; });
+    await this.app.fileManager.processFrontMatter(task.file, (fm) => {
+      fm.status = status;
+      fm.close = CLOSED.includes(status) ? localStamp() : ""; // stamp when closed, clear when reopened
+    });
     this.render();
   }
 

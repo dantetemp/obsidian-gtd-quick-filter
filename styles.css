@@ -8,7 +8,7 @@
 
 .qf-search {
   width: 100%; box-sizing: border-box; margin-bottom: 8px; padding: 5px 8px;
-  border-radius: 6px; background: var(--background-secondary);
+  border-radius: 5px; background: var(--background-secondary);
   border: 1px solid var(--background-modifier-border); color: var(--text-normal);
 }
 
@@ -123,16 +123,12 @@
 .is-mobile .gtd-quick-filter .qf-cs-btn,
 .is-mobile .gtd-quick-filter .qf-mode,
 .is-mobile .gtd-quick-filter .qf-search,
-.is-mobile .gtd-quick-filter .qf-dinput {
-  height: 32px !important;
-  min-height: 32px !important;
+.is-mobile .gtd-quick-filter .qf-dinput,
+.is-mobile .gtd-quick-filter .qf-chip {
+  height: 28px !important;
+  min-height: 28px !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
   font-size: 13px;
 }
-.is-mobile .gtd-quick-filter .qf-chip {
-  min-height: 28px;
-  padding-top: 3px !important;
-  padding-bottom: 3px !important;
-}
-.is-mobile .gtd-quick-filter .qf-cs-item { min-height: 34px; display: flex; align-items: center; }
+.is-mobile .gtd-quick-filter .qf-cs-item { min-height: 32px; display: flex; align-items: center; }
