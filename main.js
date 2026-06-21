@@ -271,21 +271,11 @@ class FilterPanel {
   matchesTags(t) {
     if (this.tagsSel === "no") return t.tags.length === 0;
     if (this.tagsSel === "has" && t.tags.length === 0) return false;
-    // faceted: group selections by top-level group → OR within a group; AND/OR across groups.
-    // lets you combine e.g. (location: home OR not-set) with (context: phone).
-    const groups = new Map();
-    for (const s of this.selected) {
-      const g = top(s);
-      if (!groups.has(g)) groups.set(g, []);
-      groups.get(g).push((x) => this.taskHasSel(x, s));
-    }
-    for (const g of this.tagNotSet) {
-      if (!groups.has(g)) groups.set(g, []);
-      groups.get(g).push((x) => !this.taskInGroup(x, g));
-    }
-    if (groups.size === 0) return true;
-    const perGroup = [...groups.values()].map((conds) => conds.some((fn) => fn(t)));
-    return this.mode === "AND" ? perGroup.every(Boolean) : perGroup.some(Boolean);
+    const conds = [];
+    for (const s of this.selected) conds.push(this.taskHasSel(t, s));
+    for (const g of this.tagNotSet) conds.push(!this.taskInGroup(t, g)); // "not set": no tag in group
+    if (conds.length === 0) return true;
+    return this.mode === "AND" ? conds.every(Boolean) : conds.some(Boolean);
   }
   matchesSearch(t) {
     if (!this.search) return true;
@@ -313,8 +303,27 @@ class FilterPanel {
       || this.parentSel !== "any" || this.subtasksSel !== "any" || this.researchSel !== "any" || this.notesSel !== "any";
   }
 
-  toggle(v) { this.tagsSel = "any"; this.selected.has(v) ? this.selected.delete(v) : this.selected.add(v); this.render(); }
-  toggleNotSet(g) { this.tagsSel = "any"; this.tagNotSet.has(g) ? this.tagNotSet.delete(g) : this.tagNotSet.add(g); this.render(); }
+  // within a group, the parent (whole group), specific children, and "not set"
+  // are mutually exclusive: selecting one clears the conflicting kinds.
+  toggle(v) {
+    this.tagsSel = "any";
+    const g = top(v);
+    if (v === g) { // selected the GROUP → clear its children + not-set
+      for (const s of [...this.selected]) if (s !== g && top(s) === g) this.selected.delete(s);
+      this.tagNotSet.delete(g);
+    } else { // selected a CHILD → clear the group + not-set (other children stay)
+      this.selected.delete(g);
+      this.tagNotSet.delete(g);
+    }
+    this.selected.has(v) ? this.selected.delete(v) : this.selected.add(v);
+    this.render();
+  }
+  toggleNotSet(g) {
+    this.tagsSel = "any";
+    for (const s of [...this.selected]) if (top(s) === g) this.selected.delete(s); // clear group + children
+    this.tagNotSet.has(g) ? this.tagNotSet.delete(g) : this.tagNotSet.add(g);
+    this.render();
+  }
 
   // multi-select statuses (OR): from select mode → toggle; else start fresh single.
   // ALL/ACTIVE never combine with specific statuses.
