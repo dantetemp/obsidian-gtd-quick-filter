@@ -305,6 +305,36 @@ class FilterPanel {
   toggle(v) { this.tagsSel = "any"; this.selected.has(v) ? this.selected.delete(v) : this.selected.add(v); this.render(); }
   toggleNotSet(g) { this.tagsSel = "any"; this.tagNotSet.has(g) ? this.tagNotSet.delete(g) : this.tagNotSet.add(g); this.render(); }
 
+  // multi-select statuses (OR): from select mode → toggle; else start fresh single.
+  // ALL/ACTIVE never combine with specific statuses.
+  multiToggleStatus(key) {
+    if (this.statusMode === "select") {
+      this.statusSel.has(key) ? this.statusSel.delete(key) : this.statusSel.add(key);
+      if (this.statusSel.size === 0) this.statusMode = "active";
+    } else {
+      this.statusMode = "select"; this.statusSel = new Set([key]);
+    }
+    this.render();
+  }
+  // tap = single select · long-press (mobile) or ⌘/Ctrl-click (desktop) = multi
+  wireStatusTab(btn, key) {
+    let timer = null, longFired = false;
+    const startHold = () => { longFired = false; timer = window.setTimeout(() => { longFired = true; this.multiToggleStatus(key); }, 450); };
+    const cancelHold = () => { if (timer) { window.clearTimeout(timer); timer = null; } };
+    btn.addEventListener("touchstart", startHold, { passive: true });
+    btn.addEventListener("touchend", cancelHold);
+    btn.addEventListener("touchmove", cancelHold);
+    btn.addEventListener("mousedown", startHold);
+    btn.addEventListener("mouseup", cancelHold);
+    btn.addEventListener("mouseleave", cancelHold);
+    btn.onclick = (e) => {
+      cancelHold();
+      if (longFired) { longFired = false; e.preventDefault(); return; }
+      if (e.metaKey || e.ctrlKey) { this.multiToggleStatus(key); return; }
+      this.statusMode = "select"; this.statusSel = new Set([key]); this.render();
+    };
+  }
+
   clearAll() {
     this.selected.clear(); this.tagNotSet.clear(); this.tagsSel = "any"; this.search = "";
     this.statusMode = "active"; this.statusSel.clear();
@@ -417,28 +447,17 @@ class FilterPanel {
 
     // status tabs: ACTIVE · specific (⌘/Ctrl-click = OR multi-select) · ALL · CLEAR ALL
     const tabs = root.createDiv({ cls: "qf-tabs" });
-    const mkTab = (label, count, isActive, onClick, extraCls = "") => {
-      const btn = tabs.createEl("button", { cls: "qf-tab" + extraCls + (isActive ? " is-active" : ""), text: `${label} ${count}` });
-      btn.onclick = onClick;
-    };
-    mkTab("ACTIVE", all.filter((t) => !CLOSED.includes(t.status)).length, this.statusMode === "active",
-      () => { this.statusMode = "active"; this.statusSel.clear(); this.render(); }, " qf-tab-all");
+    const mkTab = (label, count, isActive, extraCls = "") =>
+      tabs.createEl("button", { cls: "qf-tab" + extraCls + (isActive ? " is-active" : ""), text: `${label} ${count}` });
+    mkTab("ACTIVE", all.filter((t) => !CLOSED.includes(t.status)).length, this.statusMode === "active", " qf-tab-all")
+      .onclick = () => { this.statusMode = "active"; this.statusSel.clear(); this.render(); };
     for (const s of SPECIFIC_STATUSES) {
       const count = all.filter((t) => t.status === s.key).length;
       const isOn = this.statusMode === "select" && this.statusSel.has(s.key);
-      mkTab(s.label, count, isOn, (e) => {
-        if (e.metaKey || e.ctrlKey) {
-          this.statusMode = "select";
-          this.statusSel.has(s.key) ? this.statusSel.delete(s.key) : this.statusSel.add(s.key);
-          if (this.statusSel.size === 0) this.statusMode = "active";
-        } else {
-          this.statusMode = "select"; this.statusSel = new Set([s.key]);
-        }
-        this.render();
-      });
+      this.wireStatusTab(mkTab(s.label, count, isOn), s.key);
     }
-    mkTab("ALL", all.length, this.statusMode === "all",
-      () => { this.statusMode = "all"; this.statusSel.clear(); this.render(); });
+    mkTab("ALL", all.length, this.statusMode === "all")
+      .onclick = () => { this.statusMode = "all"; this.statusSel.clear(); this.render(); };
     const clr = tabs.createEl("button", { cls: "qf-clear-tabs" + (this.anyFilter() ? " is-active" : ""), text: "CLEAR ALL" });
     clr.onclick = () => this.clearAll();
 
@@ -797,6 +816,10 @@ module.exports = class QuickFilterPlugin extends Plugin {
     const refresh = () => { for (const p of [...this.panels]) { if (p.container && p.container.isConnected) p.render(); else this.panels.delete(p); } };
     this.registerEvent(this.app.metadataCache.on("changed", refresh));
     this.registerEvent(this.app.metadataCache.on("resolve", refresh));
+
+    // stamp/clear `close` whenever a task's status changes by ANY means (manual edits too)
+    this._reconciling = false;
+    this.registerEvent(this.app.metadataCache.on("changed", (file) => this.reconcileClose(file)));
   }
   async activateView() {
     const { workspace } = this.app;
@@ -804,5 +827,21 @@ module.exports = class QuickFilterPlugin extends Plugin {
     if (!leaf) { leaf = workspace.getRightLeaf(false) || workspace.getLeaf(true); await leaf.setViewState({ type: VIEW_TYPE, active: true }); }
     workspace.revealLeaf(leaf);
   }
+  async reconcileClose(file) {
+    if (this._reconciling) return;
+    const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
+    if (!fm || fm.type !== "task") return;
+    const closed = CLOSED.includes(fm.status);
+    const hasClose = fm.close != null && fm.close !== "";
+    if (closed === hasClose) return; // consistent: (closed & stamped) or (open & empty)
+    this._reconciling = true;
+    try {
+      await this.app.fileManager.processFrontMatter(file, (f) => {
+        if (CLOSED.includes(f.status)) { if (!f.close) f.close = localStamp(); }
+        else { f.close = ""; }
+      });
+    } catch (e) { /* ignore */ } finally { this._reconciling = false; }
+  }
+
   onunload() {}
 };
