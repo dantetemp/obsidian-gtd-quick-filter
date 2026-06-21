@@ -114,3 +114,25 @@
 .qf-trow:hover { background: var(--background-modifier-hover); }
 .qf-tcell-title { cursor: pointer; }
 .qf-tcell-title:hover { color: var(--text-accent); }
+
+/* ===== mobile: compact controls (Obsidian inflates touch targets ~44-48px) ===== */
+/* desktop is untouched; these only apply when body has .is-mobile */
+.is-mobile .gtd-quick-filter .qf-icon,
+.is-mobile .gtd-quick-filter .qf-tab,
+.is-mobile .gtd-quick-filter .qf-clear-tabs,
+.is-mobile .gtd-quick-filter .qf-cs-btn,
+.is-mobile .gtd-quick-filter .qf-mode,
+.is-mobile .gtd-quick-filter .qf-search,
+.is-mobile .gtd-quick-filter .qf-dinput {
+  height: 32px !important;
+  min-height: 32px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  font-size: 13px;
+}
+.is-mobile .gtd-quick-filter .qf-chip {
+  min-height: 28px;
+  padding-top: 3px !important;
+  padding-bottom: 3px !important;
+}
+.is-mobile .gtd-quick-filter .qf-cs-item { min-height: 34px; display: flex; align-items: center; }
